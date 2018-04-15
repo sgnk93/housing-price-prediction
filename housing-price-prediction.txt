@@ -1,0 +1,53 @@
+#Import Libraries
+import pandas as pd
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+
+#Read the IOWA housing Data
+main_file_path = '../input/train.csv'
+data = pd.read_csv(main_file_path)
+
+#Create a data frame with the prediction variable
+price_data = data.SalePrice
+y = price_data
+# Create a dataframe with the predictors
+iowa_predictors = ['LotArea', 'YearBuilt', '1stFlrSF', '2ndFlrSF', 'FullBath', 'BedroomAbvGr', 'TotRmsAbvGrd']
+X = data[iowa_predictors]
+
+#Splitting the data into training and validation data
+train_X, val_X, train_y, val_y = train_test_split(X, y, random_state = 0)
+
+#Utility function to compare MAE scores from different values of max leaf nodes
+"""def get_mae(max_leaf_nodes, predictors_train, predictors_val, targ_train, targ_val):
+    model = DecisionTreeRegressor(max_leaf_nodes=max_leaf_nodes, random_state=0)
+    model.fit(predictors_train, targ_train)
+    preds_val = model.predict(predictors_val)
+    mae = mean_absolute_error(targ_val, preds_val)
+    return(mae)
+for max_leaf_nodes in[5, 50, 500, 5000]:
+    my_mae = get_mae(max_leaf_nodes, train_X, val_X, train_y, val_y)
+    print("Max leaf_nodes : %d \t\t Mean Absolute Error: %d"%(max_leaf_nodes,my_mae))"""
+
+#Define and Fit Decision Tree Model
+iowa_model = DecisionTreeRegressor(max_leaf_nodes = 50)
+iowa_model.fit(train_X,train_y)
+
+#Get Predicted prices on validation data and find out Mean Absolute Error
+val_predictions = iowa_model.predict(val_X)
+#print(mean_absolute_error(val_y, val_predictions))
+
+#Define and fit Random Forest Model and check mean absolute error
+forest_model = RandomForestRegressor()
+forest_model.fit(train_X,train_y)
+iowa_preds = forest_model.predict(val_X)
+#print(mean_absolute_error(val_y, iowa_preds))
+
+#Creating CSV out file for the test data
+test = pd.read_csv('../input/test.csv')
+test_X = test[iowa_predictors]
+predicted_prices = forest_model.predict(test_X)
+#print(predicted_prices)
+my_submission = pd.DataFrame({'Id' : test.Id,'SalePrice' : predicted_prices})
+my_submission.to_csv('submission.csv', index = False)
